@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/outback_lunch_break/static/css/main.0bf354c2.css",
+    "main.js": "/outback_lunch_break/static/js/main.ba8b51ec.js",
+    "static/js/453.02b3caeb.chunk.js": "/outback_lunch_break/static/js/453.02b3caeb.chunk.js",
+    "static/media/outback_logo.png": "/outback_lunch_break/static/media/outback_logo.0d1c6a530be87066fe1a.png",
+    "index.html": "/outback_lunch_break/index.html",
+    "main.0bf354c2.css.map": "/outback_lunch_break/static/css/main.0bf354c2.css.map",
+    "main.ba8b51ec.js.map": "/outback_lunch_break/static/js/main.ba8b51ec.js.map",
+    "453.02b3caeb.chunk.js.map": "/outback_lunch_break/static/js/453.02b3caeb.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0bf354c2.css",
+    "static/js/main.ba8b51ec.js"
+  ]
+}
