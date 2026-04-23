@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"
+     viewBox="0 0 200 200">
+
+  <rect width="200" height="200" fill="none"/>
+
+  <!-- Pontilhado aborígene simples -->
+  <circle cx="20" cy="20" r="2" fill="white" opacity="0.25"/>
+  <circle cx="60" cy="40" r="3" fill="white" opacity="0.25"/>
+  <circle cx="100" cy="20" r="2" fill="white" opacity="0.25"/>
+  <circle cx="140" cy="50" r="3" fill="white" opacity="0.25"/>
+  <circle cx="180" cy="30" r="2" fill="white" opacity="0.25"/>
+
+  <circle cx="40" cy="80" r="2" fill="white" opacity="0.25"/>
+  <circle cx="90" cy="90" r="3" fill="white" opacity="0.25"/>
+  <circle cx="150" cy="100" r="2" fill="white" opacity="0.25"/>
+
+  <circle cx="30" cy="140" r="3" fill="white" opacity="0.25"/>
+  <circle cx="80" cy="160" r="2" fill="white" opacity="0.25"/>
+  <circle cx="130" cy="150" r="3" fill="white" opacity="0.25"/>
+  <circle cx="180" cy="170" r="2" fill="white" opacity="0.25"/>
+
+</svg>
