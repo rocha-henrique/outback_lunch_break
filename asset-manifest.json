@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/outback_lunch_break/static/css/main.6dc91ced.css",
-    "main.js": "/outback_lunch_break/static/js/main.f6832fcc.js",
+    "main.css": "/outback_lunch_break/static/css/main.69afe7ed.css",
+    "main.js": "/outback_lunch_break/static/js/main.6405d0ea.js",
     "static/js/453.02b3caeb.chunk.js": "/outback_lunch_break/static/js/453.02b3caeb.chunk.js",
     "static/media/outback_logo.png": "/outback_lunch_break/static/media/outback_logo.0d1c6a530be87066fe1a.png",
     "index.html": "/outback_lunch_break/index.html",
-    "main.6dc91ced.css.map": "/outback_lunch_break/static/css/main.6dc91ced.css.map",
-    "main.f6832fcc.js.map": "/outback_lunch_break/static/js/main.f6832fcc.js.map",
+    "main.69afe7ed.css.map": "/outback_lunch_break/static/css/main.69afe7ed.css.map",
+    "main.6405d0ea.js.map": "/outback_lunch_break/static/js/main.6405d0ea.js.map",
     "453.02b3caeb.chunk.js.map": "/outback_lunch_break/static/js/453.02b3caeb.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.6dc91ced.css",
-    "static/js/main.f6832fcc.js"
+    "static/css/main.69afe7ed.css",
+    "static/js/main.6405d0ea.js"
   ]
 }
