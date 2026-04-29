@@ -1,50 +1,133 @@
-import { useState, useRef } from 'react';
-import logo from './images/outback_logo.png';
-import './App.css';
+import { useState, useRef, useEffect } from "react";
+import logo from "./images/outback_logo.png";
+import "./App.css";
 
-function App() {
-  const [hour, setHour] = useState(12);
-  const [minute, setMinute] = useState(0);
+let hapticEnabled = false;
+
+function haptic(pattern = 10) {
+  if (hapticEnabled && navigator.vibrate) navigator.vibrate(pattern);
+}
+
+function notifySystem(title, body) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, { body });
+  }
+}
+
+function loadStoredTime() {
+  try {
+    const data = JSON.parse(localStorage.getItem("lunch_time"));
+    if (!data) return { hour: 12, minute: 0, lunchIndex: 0 };
+    return data;
+  } catch {
+    return { hour: 12, minute: 0, lunchIndex: 0 };
+  }
+}
+
+export default function App() {
+  const stored = loadStoredTime();
+
+  const [hour, setHour] = useState(stored.hour);
+  const [minute, setMinute] = useState(stored.minute);
+  const [lunchIndex, setLunchIndex] = useState(stored.lunchIndex);
+  const [returnTime, setReturnTime] = useState("");
+  const [showResult, setShowResult] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
 
   const lunchOptions = [
-    { label: '00:35', value: 35 },
-    { label: '01:05', value: 65 },
-    { label: '02:05', value: 125 },
+    { label: "00:35", value: 35 },
+    { label: "01:05", value: 65 },
+    { label: "02:05", value: 125 },
   ];
 
-  const [lunchIndex, setLunchIndex] = useState(0);
-  const [returnTime, setReturnTime] = useState('');
-  const [showResult, setShowResult] = useState(false);
+  const lastY = useRef(null);
+  const alertTimeout = useRef(null);
 
-  const touchStartY = useRef(null);
+  // 👉 Controle de notificação ao sair da aba
+  const hasReturnTime = useRef(false);
+  const notifiedLeaving = useRef(false);
 
-  function changeValue(setter, max) {
-    return (delta) => {
-      setter((prev) => {
-        let next = prev + delta;
-        if (next < 0) next = max;
-        if (next > max) next = 0;
-        return next;
-      });
-    };
+  useEffect(() => {
+    localStorage.setItem(
+      "lunch_time",
+      JSON.stringify({ hour, minute, lunchIndex })
+    );
+  }, [hour, minute, lunchIndex]);
+
+  useEffect(() => {
+    let meta = document.querySelector("meta[name='theme-color']");
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "theme-color";
+      document.head.appendChild(meta);
+    }
+    meta.content = "#75000a";
+  }, []);
+
+  // ✅ Notificação quando o usuário sai da aba
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (
+        document.hidden &&
+        hasReturnTime.current &&
+        !notifiedLeaving.current
+      ) {
+        notifySystem(
+          "⏰ Lembrete de almoço",
+          "Você já calculou o horário de retorno. Avisaremos faltando 5 minutos."
+        );
+        notifiedLeaving.current = true;
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
+  function changeValue(setter, max, delta) {
+    setter((prev) => {
+      let next = prev + delta;
+      if (next < 0) next = max;
+      if (next > max) next = 0;
+      haptic(10);
+      return next;
+    });
+  }
+
+  function changeLunch(delta) {
+    setLunchIndex((prev) => {
+      let next = prev + delta;
+      if (next < 0) next = lunchOptions.length - 1;
+      if (next >= lunchOptions.length) next = 0;
+      haptic(10);
+      return next;
+    });
   }
 
   function handleWheel(fn) {
-    return (e) => {
-      e.deltaY > 0 ? fn(1) : fn(-1);
-    };
+    return (e) => fn(e.deltaY > 0 ? 1 : -1);
   }
 
   function handleTouchStart(e) {
-    touchStartY.current = e.touches[0].clientY;
+    lastY.current = e.touches[0].clientY;
   }
 
-  function handleTouchEnd(fn) {
+  function handleTouchMove(fn) {
     return (e) => {
-      const diff = touchStartY.current - e.changedTouches[0].clientY;
-      if (diff > 25) fn(1);
-      if (diff < -25) fn(-1);
+      if (lastY.current === null) return;
+      const current = e.touches[0].clientY;
+      const diff = lastY.current - current;
+      if (Math.abs(diff) >= 12) {
+        fn(diff > 0 ? 1 : -1);
+        lastY.current = current;
+      }
     };
+  }
+
+  function handleTouchEnd() {
+    lastY.current = null;
   }
 
   function calculateReturnTime() {
@@ -55,12 +138,44 @@ function App() {
     const retMinute = totalMinutes % 60;
 
     setReturnTime(
-      `${String(retHour).padStart(2, '0')}:${String(retMinute).padStart(
+      `${String(retHour).padStart(2, "0")}:${String(retMinute).padStart(
         2,
-        '0'
+        "0"
       )}`
     );
+
     setShowResult(true);
+    hasReturnTime.current = true;
+    notifiedLeaving.current = false;
+
+    if (alertTimeout.current) clearTimeout(alertTimeout.current);
+
+    const now = new Date();
+    const returnDate = new Date();
+    returnDate.setHours(retHour, retMinute, 0, 0);
+
+    const delay =
+      returnDate.getTime() - 5 * 60 * 1000 - now.getTime();
+
+    if (delay > 0) {
+      alertTimeout.current = setTimeout(() => {
+        haptic([400, 150, 400, 150, 600]);
+        notifySystem(
+          "⏰ Hora de voltar!",
+          "Faltam 5 minutos para retornar do almoço."
+        );
+        setShowAlert(true);
+        setTimeout(() => setShowAlert(false), 10000);
+      }, delay);
+    }
+  }
+
+  function enableFeatures() {
+    hapticEnabled = true;
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+    setShowIntro(false);
   }
 
   return (
@@ -73,73 +188,81 @@ function App() {
         <label>Hora de saída</label>
 
         <div className="field time-row">
-          {/* Hora */}
           <div
             className="wheel-container"
-            onWheel={handleWheel(changeValue(setHour, 23))}
+            onWheel={handleWheel((d) => changeValue(setHour, 23, d))}
             onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd(changeValue(setHour, 23))}
+            onTouchMove={handleTouchMove((d) => changeValue(setHour, 23, d))}
+            onTouchEnd={handleTouchEnd}
           >
             <div className="wheel">
-              {[hour - 1, hour, hour + 1].map((h, i) => (
-                <div
-                  key={i}
-                  className={`wheel-item ${i === 1 ? 'active' : ''}`}
-                >
-                  {String((h + 24) % 24).padStart(2, '0')}
-                </div>
-              ))}
+              <div
+                className="wheel-item"
+                onClick={() => changeValue(setHour, 23, -1)}
+              >
+                {String((hour + 23) % 24).padStart(2, "0")}
+              </div>
+              <div className="wheel-item active">
+                {String(hour).padStart(2, "0")}
+              </div>
+              <div
+                className="wheel-item"
+                onClick={() => changeValue(setHour, 23, 1)}
+              >
+                {String((hour + 1) % 24).padStart(2, "0")}
+              </div>
             </div>
           </div>
 
           <span className="colon">:</span>
 
-          {/* Minuto */}
           <div
             className="wheel-container"
-            onWheel={handleWheel(changeValue(setMinute, 59))}
+            onWheel={handleWheel((d) => changeValue(setMinute, 59, d))}
             onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd(changeValue(setMinute, 59))}
+            onTouchMove={handleTouchMove((d) => changeValue(setMinute, 59, d))}
+            onTouchEnd={handleTouchEnd}
           >
             <div className="wheel">
-              {[minute - 1, minute, minute + 1].map((m, i) => (
-                <div
-                  key={i}
-                  className={`wheel-item ${i === 1 ? 'active' : ''}`}
-                >
-                  {String((m + 60) % 60).padStart(2, '0')}
-                </div>
-              ))}
+              <div
+                className="wheel-item"
+                onClick={() => changeValue(setMinute, 59, -1)}
+              >
+                {String((minute + 59) % 60).padStart(2, "0")}
+              </div>
+              <div className="wheel-item active">
+                {String(minute).padStart(2, "0")}
+              </div>
+              <div
+                className="wheel-item"
+                onClick={() => changeValue(setMinute, 59, 1)}
+              >
+                {String((minute + 1) % 60).padStart(2, "0")}
+              </div>
             </div>
           </div>
         </div>
 
         <label>Duração do almoço</label>
 
-        <div className="field">
-          <div
-            className="wheel-container wide"
-            onWheel={handleWheel(
-              changeValue(setLunchIndex, lunchOptions.length - 1)
-            )}
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd(
-              changeValue(setLunchIndex, lunchOptions.length - 1)
-            )}
-          >
+        <div
+          className="field"
+          onWheel={(e) => changeLunch(e.deltaY > 0 ? 1 : -1)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove(changeLunch)}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="wheel-container wide">
             <div className="wheel">
-              {[lunchIndex - 1, lunchIndex, lunchIndex + 1].map((i, idx) => {
-                const index =
-                  (i + lunchOptions.length) % lunchOptions.length;
-                return (
-                  <div
-                    key={idx}
-                    className={`wheel-item ${idx === 1 ? 'active' : ''}`}
-                  >
-                    {lunchOptions[index].label}
-                  </div>
-                );
-              })}
+              <div className="wheel-item" onClick={() => changeLunch(-1)}>
+                {lunchOptions[(lunchIndex + 2) % 3].label}
+              </div>
+              <div className="wheel-item active">
+                {lunchOptions[lunchIndex].label}
+              </div>
+              <div className="wheel-item" onClick={() => changeLunch(1)}>
+                {lunchOptions[(lunchIndex + 1) % 3].label}
+              </div>
             </div>
           </div>
         </div>
@@ -155,8 +278,27 @@ function App() {
           </div>
         )}
       </div>
+
+      {showAlert && (
+        <div className="visual-alert">
+          ⏰ Faltam 5 minutos para retornar do almoço
+        </div>
+      )}
+
+      {showIntro && (
+        <div className="intro-overlay">
+          <div className="intro-box">
+            <h2>👋 Hello Mate</h2>
+            <p>
+              Este site não possui fins lucrativos e foi criado apenas para ajudar
+              colaboradores a lembrarem o horário de retorno do almoço.
+            </p>
+            <button className="btn" onClick={enableFeatures}>
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-export default App;
